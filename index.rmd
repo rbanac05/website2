@@ -1,0 +1,132 @@
+---
+title: "SQL"
+output: html_document
+---
+
+## Filtering Columns and Rows
+
+With SQL, you can filter columns and rows by using SELECT and WHERE. Below you will find an example using the Lahman database.The first thing we'll need to dois load that database, as well as the sqldf package.
+
+```{r message=FALSE,warning=FALSE}
+library(Lahman)
+library(sqldf)
+```
+
+```{r}
+query<-"SELECT teamID,yearID,playerID,HR FROM Batting
+WHERE teamID='NYA' and yearID=1927"
+sqldf(query)
+```
+The next example you will see is a query looking for members of the New York Yankees that have hit up to 40 homeruns. For this, we would write the following:
+```{r}
+query<-"SELECT teamID,yearID,playerID,HR FROM Batting
+WHERE teamID='NYA' and HR>=40"
+sqldf(query)
+```
+```{r}
+query<-"SELECT playerID,teamID,yearID,HR,SO FROM Batting
+WHERE HR>40 and SO<60"
+sqldf(query)
+```
+```{r}
+query<-"SELECT playerID,teamID,yearID,HR FROM Batting
+WHERE teamID='PHI' and yearID<=1979 and yearID>=1970 and HR>30"
+sqldf(query)
+```
+
+## Order BY
+With SQL, you can order the rows of your output. For instance, suppose you want to see every instance of a player hitting more than 50 homeruns, but you would like the players with the most homeruns to be at the top. we could do the following:
+```{r}
+query<-"SELECT playerID,HR FROM Batting
+WHERE HR>50
+ORDER BY HR DESC"
+
+sqldf(query)
+```
+In the example below, we are runninga query searchingfor players that have struck out less than 10 times, hove had at least 400 at-bats, and we are ordering the list with the least strikeouts at the top. For that, we would write the following:
+```{r}
+query<-"SELECT playerID,teamID,yearID,SO,AB FROM Batting
+WHERE SO<10 and AB>=400
+ORDER BY SO"
+sqldf(query)
+```
+
+##Aggregation
+Sometimes when working with SWL, there wil be a need to condense results to the minimum possible output. Below you will find acouple examples of how we can do this, with my examples using suming(HR) and avg(HR).
+```{r}
+query<-"SELECT playerID,sum(HR) FROM Batting
+GROUP BY playerID
+HAVING sum(HR)>=600
+ORDER BY sum(HR) DESC"
+sqldf(query)
+```
+```{r}
+query<-"SELECT playerID,avg(HR) FROM Batting
+GROUP BY playerID
+HAVING avg(HR)>30
+ORDER BY avg(HR) DESC"
+sqldf(query)
+```
+As you can see above, we queried any players that have 600 or more homeruns for their whole careers, putting them in order from greatest to least. In the second example, we were lokoking for players who in their careers avenged more than 30 homeruns, also in descending order.
+
+## JOINS
+SOmetimes when sorking with SQL, there are instances where you want to join multiple tables to come together as one output. Below I will post a couple examples of code used to go about this.
+```{r}
+query<-"SELECT nameFirst,nameLast,teamID,yearID,HR
+FROM Batting INNER JOIN Master
+ON Batting.playerID=Master.playerID
+WHERE Batting.playerID='ruthba01'"
+sqldf(query)
+```
+In the example above, we ran a query looking for seasons where Babe Ruth played baseball, joining the Master and Batting tables to come to our result.
+
+In the example below, we have linked the batting and Master tables again to find instances of players hitting more than 50 homeruns, including first/last name, team, year, and homerun total.
+```{r}
+query<- "SELECT nameFIrst,nameLast,teamID,yearID,HR
+FROM Batting INNER JOIN Master
+ON Batting.playerID=Master.playerID
+WHERE HR>50
+ORDER BY HR DESC"
+sqldf(query)
+```
+```{r}
+query<-"SELECT playerID,name,Batting.yearID,Batting.HR
+FROM Batting Inner JOIN Teams
+ON Batting.teamID=Teams.teamID and Batting.yearID=Teams.yearID
+WHERE playerID='ruthba01'"
+sqldf(query)
+```
+
+##Joins Update September 13,2017
+As stated in the previous update of the website, I now have an instance of code where you would be able to link three tables together. The example is as follow:
+```{r}
+query<-"SELECT nameFirst,nameLast,name,Batting.yearID,Batting.HR
+FROM Batting INNER JOIN Teams
+ON Batting.teamID=Teams.teamID and Batting.yearID=Teams.yearID
+INNER JOIN Master
+ON Batting.playerID=Master.playerID
+WHERE Batting.playerID='ruthba01'"
+sqldf(query)
+```
+As you can see above, there are two INNER JOIN commands in the syntax of our code, one of which links the Teams table and the other linking the Master table, making connections with teamID, yearID, and playerID.
+```{r}
+query<-"SELECT nameFirst,nameLast,sum(HR)
+FROM Batting INNER JOIN Master
+ON Batting.playerID=Master.playerID
+GROUP BY Batting.playerID
+HAVING sum(HR)>=600
+ORDER BY sum(HR) DESC"
+sqldf(query)
+```
+
+```{r}
+query<-"SELECT nameFirst,nameLast,avg(salary)
+FROM Salaries INNER JOIN Master
+ON Salaries.playerID=Master.playerID
+WHERE nameFirst='Bob'
+GROUP BY Salaries.playerID
+HAVING avg(salary)>1000000
+ORDER BY avg(salary) DESC"
+sqldf(query)
+```
+
